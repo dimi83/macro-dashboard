@@ -1,0 +1,65 @@
+name: Update financial data
+
+on:
+  schedule:
+    - cron: '0 22 * * 1-5'   # runs Mon–Fri at 22:00 UTC (after US markets close)
+  workflow_dispatch:           # lets you also run it manually from GitHub
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Fetch data from FRED and Shiller
+        env:
+          FRED_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          python3 - <<'EOF'
+          import urllib.request, json, datetime
+
+          FRED = "https://api.stlouisfed.org/fred/series/observations"
+          KEY  = "${{ secrets.FRED_API_KEY }}"
+
+          def fred(series, start="2000-01-01"):
+              url = f"{FRED}?series_id={series}&api_key={KEY}&file_type=json&sort_order=asc&observation_start={start}"
+              with urllib.request.urlopen(url) as r:
+                  obs = json.loads(r.read())["observations"]
+              return [[o["date"][:7], float(o["value"])] for o in obs if o["value"] != "."]
+
+          # Shiller CAPE
+          with urllib.request.urlopen("https://posix4e.github.io/shiller_wrapper_data/data/latest.json") as r:
+              raw   = json.loads(r.read())["data"]
+              cape  = [[row["Date"][:7], float(row["CAPE"])] for row in raw if row.get("CAPE") and row["CAPE"] != "."]
+
+          vix   = fred("VIXCLS",           "2005-01-01")
+          yc    = fred("T10Y2Y",            "2000-01-01")
+          mkt   = fred("DDDM01USA156NWDB",  "1995-01-01")
+          gdp   = fred("GDP",               "1995-01-01")
+
+          gdp_map = {r[0][:4]: r[1] for r in gdp}
+          buffett = [[r[0], round(r[1] / gdp_map[r[0][:4]] * 100, 1)]
+                     for r in mkt if r[0][:4] in gdp_map]
+
+          out = {
+              "updated": datetime.date.today().isoformat(),
+              "cape":    cape[-400:],
+              "vix":     vix,
+              "yc":      yc,
+              "buffett": buffett,
+          }
+
+          with open("data.json", "w") as f:
+              json.dump(out, f, separators=(",", ":"))
+
+          print("data.json written,", len(cape), "CAPE rows,", len(vix), "VIX rows")
+          EOF
+
+      - name: Commit updated data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git diff --staged --quiet || git commit -m "chore: update financial data $(date -u +%Y-%m-%d)"
+          git push
