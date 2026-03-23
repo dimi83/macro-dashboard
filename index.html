@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Macro Dashboard — Key Financial Charts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #18180f;
+    --text2: #6b6b5e;
+    --text3: #9e9e8f;
+    --amber: #ba7517;
+    --amber-bg: #faeeda;
+    --red: #a32d2d;
+    --red-bg: #fcebeb;
+    --green: #3b6d11;
+    --green-bg: #eaf3de;
+    --blue: #185fa5;
+    --blue-light: #378add;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121210;
+      --surface: #1c1c19;
+      --surface2: #252521;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.13);
+      --text: #eeede6;
+      --text2: #9a9a8a;
+      --text3: #636357;
+      --amber: #ef9f27;
+      --amber-bg: rgba(239,159,39,0.12);
+      --red: #e24b4a;
+      --red-bg: rgba(226,75,74,0.12);
+      --green: #639922;
+      --green-bg: rgba(99,153,34,0.12);
+      --blue: #85b7eb;
+      --blue-light: #378add;
+    }
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 0.5px solid var(--border2);
+    background: var(--surface);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 58px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--amber);
+    border-radius: 50%;
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .header-right {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+  }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .page-title {
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+
+  .page-sub {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 2rem;
+  }
+
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .metric {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    transition: border-color 0.2s;
+  }
+
+  .metric:hover { border-color: var(--border2); }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .metric-value {
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: -0.02em;
+  }
+
+  .metric-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 5px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 99px;
+    font-weight: 500;
+    margin-top: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  .badge-warn { background: var(--amber-bg); color: var(--amber); }
+  .badge-danger { background: var(--red-bg); color: var(--red); }
+  .badge-ok { background: var(--green-bg); color: var(--green); }
+
+  .chart-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+  }
+
+  .chart-card:hover { border-color: var(--border2); }
+
+  .chart-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chart-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .chart-live {
+    font-size: 10px;
+    color: var(--green);
+    background: var(--green-bg);
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 500;
+  }
+
+  .chart-desc {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+  }
+
+  .signal-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .signal-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-ok { background: var(--green); }
+  .dot-warn { background: var(--amber); }
+  .dot-danger { background: var(--red); }
+
+  .signal-text {
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 14px;
+    margin-top: 2.5rem;
+  }
+
+  .skeleton { background: var(--surface2); border-radius: 4px; animation: shimmer 1.5s ease-in-out infinite; }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .error-msg {
+    font-size: 12px;
+    color: var(--text3);
+    font-style: italic;
+    padding: 8px 0;
+  }
+
+  .sources-bar {
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+    border-top: 0.5px solid var(--border);
+    font-size: 11px;
+    color: var(--text3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    line-height: 1.8;
+  }
+
+  .sources-bar a {
+    color: var(--blue);
+    text-decoration: none;
+  }
+
+  .sources-bar a:hover { text-decoration: underline; }
+
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text3);
+    padding: 1.5rem;
+    border-top: 0.5px solid var(--border);
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 0 1rem; }
+    main { padding: 1.5rem 1rem 3rem; }
+    .page-title { font-size: 22px; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Macro Dashboard
+  </div>
+  <div class="header-right" id="hdr-time">loading…</div>
+</header>
+
+<main>
+  <h1 class="page-title">Key financial charts</h1>
+  <p class="page-sub">Live data from FRED (Federal Reserve) &amp; Shiller/Yale. Updates every time you load this page.</p>
+
+  <div class="section-label">Market snapshot</div>
+  <div class="grid-4">
+    <div class="metric">
+      <div class="metric-label">Shiller P/E</div>
+      <div class="metric-value" id="v-cape">—</div>
+      <div class="metric-sub">vs hist. avg ~17</div>
+      <div id="b-cape"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">VIX fear index</div>
+      <div class="metric-value" id="v-vix">—</div>
+      <div class="metric-sub">Volatility index</div>
+      <div id="b-vix"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Yield curve</div>
+      <div class="metric-value" id="v-yield">—</div>
+      <div class="metric-sub">10Y minus 2Y</div>
+      <div id="b-yield"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">S&amp;P 500</div>
+      <div class="metric-value" id="v-sp">—</div>
+      <div class="metric-sub">Current index level</div>
+      <div id="b-sp"></div>
+    </div>
+  </div>
+
+  <div class="section-label">Valuation</div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">Shiller P/E ratio (CAPE)</div>
+      <span class="chart-live">Monthly</span>
+    </div>
+    <div class="chart-desc">Cyclically adjusted price-to-earnings. Averages earnings over 10 years to smooth cycles. Historical average is ~17. Above 30 has historically signalled expensive markets. Dashed line = long-run average.</div>
+    <div class="chart-wrap" style="height:240px"><canvas id="c-cape"></canvas></div>
+    <div class="signal-row" id="s-cape"></div>
+  </div>
+
+  <div class="section-label">Sentiment &amp; volatility</div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">VIX — CBOE Volatility Index</div>
+      <span class="chart-live">Daily</span>
+    </div>
+    <div class="chart-desc">Measures expected market volatility over the next 30 days. Below 20 = calm. 20–30 = elevated stress. Above 30 = fear / potential crisis. Known as the "fear gauge" of Wall Street.</div>
+    <div class="chart-wrap" style="height:220px"><canvas id="c-vix"></canvas></div>
+    <div class="signal-row" id="s-vix"></div>
+  </div>
+
+  <div class="section-label">Recession indicator</div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">Yield curve — 10Y minus 2Y Treasury spread</div>
+      <span class="chart-live">Daily</span>
+    </div>
+    <div class="chart-desc">The difference between 10-year and 2-year US Treasury yields. When negative (inverted), it has preceded every US recession since the 1970s. The zero line is the critical threshold. Red shading = inversion zone.</div>
+    <div class="chart-wrap" style="height:220px"><canvas id="c-yield"></canvas></div>
+    <div class="signal-row" id="s-yield"></div>
+  </div>
+
+  <div class="section-label">Buffett indicator</div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">Buffett indicator — Wilshire 5000 / US GDP</div>
+      <span class="chart-live">Quarterly</span>
+    </div>
+    <div class="chart-desc">Total US stock market value as a percentage of GDP. Warren Buffett called this "probably the best single measure of where valuations stand at any given moment." Above 100% = market above GDP. Above 150% = historically stretched.</div>
+    <div class="chart-wrap" style="height:220px"><canvas id="c-buffett"></canvas></div>
+    <div class="signal-row" id="s-buffett"></div>
+  </div>
+
+  <div class="sources-bar">
+    <span>Data sources:</span>
+    <a href="https://fred.stlouisfed.org" target="_blank">FRED — Federal Reserve Bank of St. Louis</a>
+    <a href="http://www.econ.yale.edu/~shiller/data.htm" target="_blank">Robert Shiller / Yale (CAPE)</a>
+    <a href="https://posix4e.github.io/shiller_wrapper_data/data/latest.json" target="_blank">Shiller JSON wrapper</a>
+    <span>· Not financial advice · For informational purposes only</span>
+  </div>
+</main>
+
+<footer>
+  Macro Dashboard · Built with FRED API &amp; Chart.js · Data refreshes on each page load
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const FRED_KEY = 'fd4e0ca15eae6867a29e1c17e6d66af0';
+const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const gridC = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+const tickC = isDark ? '#636357' : '#9e9e8f';
+const zeroC = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)';
+
+document.getElementById('hdr-time').textContent =
+  new Date().toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+
+function baseOpts() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false }, tooltip: { backgroundColor: isDark ? '#1c1c19' : '#fff', titleColor: isDark ? '#eeede6' : '#18180f', bodyColor: isDark ? '#9a9a8a' : '#6b6b5e', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', borderWidth: 1 } },
+    scales: {
+      x: { ticks: { color: tickC, font: { size: 10, family: "'DM Mono', monospace" }, maxTicksLimit: 10, maxRotation: 0 }, grid: { color: gridC }, border: { color: 'transparent' } },
+      y: { ticks: { color: tickC, font: { size: 10, family: "'DM Mono', monospace" } }, grid: { color: gridC }, border: { color: 'transparent' } }
+    }
+  };
+}
+
+function mkSignal(elId, level, msg) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  const dot = document.createElement('div');
+  dot.className = 'signal-dot dot-' + level;
+  const txt = document.createElement('span');
+  txt.className = 'signal-text';
+  txt.textContent = msg;
+  el.appendChild(dot);
+  el.appendChild(txt);
+}
+
+function mkBadge(elId, level, label) {
+  const el = document.getElementById(elId);
+  el.innerHTML = `<span class="badge badge-${level}">${label}</span>`;
+}
+
+async function fredFetch(series, start) {
+  const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED_KEY}&file_type=json&sort_order=asc&observation_start=${start}`;
+  const r = await fetch(url);
+  const d = await r.json();
+  return (d.observations || []).filter(o => o.value !== '.').map(o => ({ x: o.date.slice(0, 7), y: parseFloat(o.value) }));
+}
+
+async function loadCape() {
+  try {
+    const r = await fetch('https://posix4e.github.io/shiller_wrapper_data/data/latest.json');
+    const d = await r.json();
+    const rows = d.data.slice(-420);
+    const labels = rows.map(r => (r.Date || '').slice(0, 7));
+    const vals = rows.map(r => parseFloat(r.CAPE) || null);
+    const latest = vals.filter(Boolean).at(-1);
+
+    document.getElementById('v-cape').textContent = latest.toFixed(1);
+    const level = latest > 35 ? 'danger' : latest > 25 ? 'warn' : 'ok';
+    const label = latest > 35 ? 'Very expensive' : latest > 25 ? 'Above average' : 'Fair value';
+    mkBadge('b-cape', level, label);
+
+    const ctx = document.getElementById('c-cape').getContext('2d');
+    const opts = baseOpts();
+    opts.scales.y.suggestedMin = 5;
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { data: vals, borderColor: '#ba7517', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: true, backgroundColor: isDark ? 'rgba(186,117,23,0.07)' : 'rgba(186,117,23,0.06)' },
+          { data: vals.map(() => 17), borderColor: zeroC, borderWidth: 1, borderDash: [5,5], pointRadius: 0, label: 'Avg ~17' },
+          { data: vals.map(() => 30), borderColor: isDark ? 'rgba(226,75,74,0.3)' : 'rgba(226,75,74,0.25)', borderWidth: 1, borderDash: [3,3], pointRadius: 0, label: 'High 30' }
+        ]
+      },
+      options: opts
+    });
+
+    const msg = latest > 35 ? 'Very expensive by historical standards — above dot-com era baseline levels'
+      : latest > 25 ? 'Above the long-term average of ~17 — market is priced for continued growth'
+      : 'Near historical average — valuations appear reasonable';
+    mkSignal('s-cape', level, msg);
+  } catch(e) {
+    document.getElementById('v-cape').textContent = 'N/A';
+    document.getElementById('s-cape').innerHTML = '<span class="error-msg">Could not load CAPE data. Check your internet connection.</span>';
+  }
+}
+
+async function loadVix() {
+  try {
+    const data = await fredFetch('VIXCLS', '2005-01-01');
+    const latest = data.at(-1).y;
+    document.getElementById('v-vix').textContent = latest.toFixed(1);
+    const level = latest > 30 ? 'danger' : latest > 20 ? 'warn' : 'ok';
+    mkBadge('b-vix', level, latest > 30 ? 'High fear' : latest > 20 ? 'Elevated' : 'Calm');
+
+    const ctx = document.getElementById('c-vix').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map(d => d.x),
+        datasets: [
+          { data: data.map(d => d.y), borderColor: '#a32d2d', borderWidth: 1.5, pointRadius: 0, tension: 0.2, fill: true, backgroundColor: isDark ? 'rgba(163,45,45,0.08)' : 'rgba(163,45,45,0.06)' },
+          { data: data.map(() => 20), borderColor: zeroC, borderWidth: 1, borderDash: [5,5], pointRadius: 0 },
+          { data: data.map(() => 30), borderColor: isDark ? 'rgba(226,75,74,0.3)' : 'rgba(226,75,74,0.2)', borderWidth: 1, borderDash: [3,3], pointRadius: 0 }
+        ]
+      },
+      options: baseOpts()
+    });
+
+    const msg = latest > 30 ? 'High fear — significant uncertainty priced into markets right now'
+      : latest > 20 ? 'Elevated volatility — markets showing signs of stress, watch closely'
+      : 'Calm markets — low volatility, investors are relatively relaxed';
+    mkSignal('s-vix', level, msg);
+  } catch(e) {
+    document.getElementById('v-vix').textContent = 'N/A';
+    document.getElementById('s-vix').innerHTML = '<span class="error-msg">Could not load VIX data.</span>';
+  }
+}
+
+async function loadYield() {
+  try {
+    const data = await fredFetch('T10Y2Y', '2000-01-01');
+    const latest = data.at(-1).y;
+    const sign = latest >= 0 ? '+' : '';
+    document.getElementById('v-yield').textContent = sign + latest.toFixed(2) + '%';
+    const level = latest < 0 ? 'danger' : latest < 0.5 ? 'warn' : 'ok';
+    mkBadge('b-yield', level, latest < 0 ? 'Inverted' : latest < 0.5 ? 'Flat' : 'Normal');
+
+    const ctx = document.getElementById('c-yield').getContext('2d');
+    const opts = baseOpts();
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map(d => d.x),
+        datasets: [
+          {
+            data: data.map(d => d.y),
+            borderColor: '#185fa5',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.2,
+            fill: { target: { value: 0 }, above: isDark ? 'rgba(55,138,221,0.09)' : 'rgba(55,138,221,0.08)', below: isDark ? 'rgba(163,45,45,0.15)' : 'rgba(163,45,45,0.1)' }
+          },
+          { data: data.map(() => 0), borderColor: zeroC, borderWidth: 1.5, pointRadius: 0 }
+        ]
+      },
+      options: opts
+    });
+
+    const msg = latest < 0 ? 'Inverted — this signal has preceded every US recession since the 1970s'
+      : latest < 0.5 ? 'Curve is very flat — flattening often precedes inversion, worth watching'
+      : 'Normal upward slope — no recession signal from the yield curve currently';
+    mkSignal('s-yield', level, msg);
+  } catch(e) {
+    document.getElementById('v-yield').textContent = 'N/A';
+    document.getElementById('s-yield').innerHTML = '<span class="error-msg">Could not load yield curve data.</span>';
+  }
+}
+
+async function loadBuffett() {
+  try {
+    const [mktData, gdpData] = await Promise.all([
+      fredFetch('DDDM01USA156NWDB', '1995-01-01'),
+      fredFetch('GDP', '1995-01-01')
+    ]);
+
+    const gdpMap = {};
+    gdpData.forEach(d => { gdpMap[d.x.slice(0,4)] = d.y; });
+
+    const combined = mktData.map(d => {
+      const year = d.x.slice(0,4);
+      const gdp = gdpMap[year];
+      if (!gdp) return null;
+      return { x: d.x, y: parseFloat(((d.y / gdp) * 100).toFixed(1)) };
+    }).filter(Boolean);
+
+    const latest = combined.at(-1);
+    if (!latest) throw new Error('no data');
+
+    document.getElementById('v-sp').textContent = latest.y.toFixed(0) + '%';
+    document.getElementById('b-sp').innerHTML = `<span class="badge ${latest.y > 150 ? 'badge-danger' : latest.y > 100 ? 'badge-warn' : 'badge-ok'}">${latest.y > 150 ? 'Very high' : latest.y > 100 ? 'Elevated' : 'Normal'}</span>`;
+
+    const ctx = document.getElementById('c-buffett').getContext('2d');
+    const opts = baseOpts();
+    opts.scales.y.ticks = { ...opts.scales.y.ticks, callback: v => v + '%' };
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: combined.map(d => d.x),
+        datasets: [
+          { data: combined.map(d => d.y), borderColor: '#185fa5', borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, backgroundColor: isDark ? 'rgba(24,95,165,0.08)' : 'rgba(24,95,165,0.06)' },
+          { data: combined.map(() => 100), borderColor: zeroC, borderWidth: 1, borderDash: [5,5], pointRadius: 0 },
+          { data: combined.map(() => 150), borderColor: isDark ? 'rgba(226,75,74,0.3)' : 'rgba(226,75,74,0.2)', borderWidth: 1, borderDash: [3,3], pointRadius: 0 }
+        ]
+      },
+      options: opts
+    });
+
+    const v = latest.y;
+    const lvl = v > 150 ? 'danger' : v > 100 ? 'warn' : 'ok';
+    const msg = v > 150 ? 'Very elevated — market cap far exceeds GDP, historically associated with corrections'
+      : v > 100 ? 'Above 100% — market valued above the size of the US economy'
+      : 'Below 100% — market valued below GDP, historically a reasonable level';
+    mkSignal('s-buffett', lvl, msg);
+  } catch(e) {
+    document.getElementById('s-buffett').innerHTML = '<span class="error-msg">Could not load Buffett Indicator data.</span>';
+  }
+}
+
+Promise.all([loadCape(), loadVix(), loadYield(), loadBuffett()]);
+</script>
+</body>
+</html>
