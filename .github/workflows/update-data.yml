@@ -14,18 +14,20 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: pip install yfinance pandas requests lxml html5lib --break-system-packages
+
       - name: Fetch data
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
         run: |
           python3 << 'PYEOF'
           import urllib.request, json, datetime, os
+          import yfinance as yf
+          import pandas as pd
 
           FRED_KEY  = os.environ["FRED_API_KEY"]
-          FMP_KEY   = os.environ["FMP_API_KEY"]
           FRED_BASE = "https://api.stlouisfed.org/fred/series/observations"
-          FMP_BASE  = "https://financialmodelingprep.com/api/v3"
 
           def fred(series, start="2000-01-01"):
               url = f"{FRED_BASE}?series_id={series}&api_key={FRED_KEY}&file_type=json&sort_order=asc&observation_start={start}"
@@ -37,13 +39,7 @@ jobs:
               print(f"  {len(result)} rows")
               return result
 
-          def fmp_get(path):
-              url = f"{FMP_BASE}/{path}&apikey={FMP_KEY}"
-              print(f"  FMP: {path[:70]}...")
-              with urllib.request.urlopen(url, timeout=60) as r:
-                  return json.loads(r.read())
-
-          # ── Macro ────────────────────────────────────────────────
+          # ── Macro ─────────────────────────────────────────────────
           vix = fred("VIXCLS", "2005-01-01")
           yc  = fred("T10Y2Y", "2000-01-01")
           with open("data.json", "w") as f:
@@ -51,87 +47,98 @@ jobs:
                          "vix": vix, "yc": yc}, f, separators=(",",":"))
           print("data.json written!")
 
-          # ── S&P 500 symbols (hardcoded — no paid endpoint needed) ─
-          SP500 = [
-            "A","AAL","AAPL","ABBV","ABNB","ABT","ACGL","ACN","ADBE","ADI","ADM","ADP","ADSK",
-            "AEE","AEP","AES","AFL","AIG","AIZ","AJG","AKAM","ALB","ALGN","ALL","ALLE","AMAT",
-            "AMCR","AMD","AME","AMGN","AMP","AMT","AMZN","ANET","AON","AOS","APA","APD","APH",
-            "APTV","ARE","ATO","AVB","AVGO","AVY","AWK","AXON","AXP","AZO","BA","BAC","BALL",
-            "BAX","BBWI","BBY","BDX","BEN","BF.B","BG","BIIB","BIO","BK","BKNG","BKR","BLDR",
-            "BLK","BMY","BR","BRK.B","BRO","BSX","BWA","BX","BXP","C","CAG","CAH","CARR","CAT",
-            "CB","CBOE","CBRE","CCI","CCL","CDNS","CDW","CE","CEG","CF","CFG","CHD","CHRW","CHTR",
-            "CI","CINF","CL","CLX","CMA","CMCSA","CME","CMG","CMI","CMS","CNC","CNP","COF","COO",
-            "COP","COR","COST","CPAY","CPB","CPRT","CPT","CRL","CRM","CRWD","CSCO","CSGP","CSX",
-            "CTAS","CTLT","CTRA","CTSH","CTVA","CVS","CVX","CZR","D","DAL","DAY","DD","DE","DECK",
-            "DELL","DFS","DG","DGX","DHI","DHR","DIS","DLR","DLTR","DOC","DOV","DOW","DPZ","DRI",
-            "DTE","DUK","DVA","DVN","DXCM","EA","EBAY","ECL","ED","EFX","EG","EIX","EL","ELV",
-            "EMN","EMR","ENPH","EOG","EPAM","EQIX","EQR","EQT","ES","ESS","ETN","ETR","EVRG",
-            "EW","EXC","EXPD","EXPE","EXR","F","FANG","FAST","FCX","FDS","FDX","FE","FFIV","FI",
-            "FICO","FIS","FITB","FMC","FOX","FOXA","FRT","FSLR","FTNT","FTV","GD","GE","GEHC",
-            "GEN","GILD","GIS","GL","GLW","GM","GNRC","GOOGL","GPC","GPN","GRMN","GS","GWW","HAL",
-            "HAS","HBAN","HCA","HD","HES","HIG","HII","HLT","HOLX","HON","HPE","HPQ","HRL","HSIC",
-            "HST","HSY","HUBB","HUM","HWM","IBM","ICE","IDXX","IEX","IFF","ILMN","INCY","INTC",
-            "INTU","INVH","IP","IPG","IQV","IR","IRM","ISRG","IT","ITW","IVZ","J","JBHT","JBL",
-            "JCI","JKHY","JNJ","JNPR","JPM","K","KDP","KEY","KEYS","KHC","KIM","KLAC","KMB",
-            "KMI","KMX","KO","KR","KVUE","L","LDOS","LEN","LH","LHX","LIN","LKQ","LLY","LMT",
-            "LNT","LOW","LRCX","LULU","LUV","LVS","LW","LYB","LYV","MA","MAA","MAR","MAS","MCD",
-            "MCHP","MCK","MCO","MDLZ","MDT","MET","META","MGM","MHK","MKC","MKTX","MLM","MMC",
-            "MMM","MNST","MO","MOH","MOS","MPC","MPWR","MRK","MRNA","MRO","MS","MSCI","MSFT",
-            "MSI","MTB","MTCH","MTD","MU","NCLH","NDAQ","NEE","NEM","NFLX","NI","NKE","NOC",
-            "NOW","NRG","NSC","NTAP","NTRS","NUE","NVDA","NVR","NWS","NWSA","NXPI","O","ODFL",
-            "OKE","OMC","ON","ORCL","ORLY","OXY","PARA","PAYC","PAYX","PCAR","PCG","PEG","PEP",
-            "PFE","PFG","PG","PGR","PH","PHM","PKG","PLD","PM","PNC","PNR","PNW","PODD","POOL",
-            "PPG","PPL","PRU","PSA","PSX","PTC","PWR","PXD","PYPL","QCOM","QRVO","RCL","REG",
-            "REGN","RF","RJF","RL","RMD","ROK","ROL","ROP","ROST","RPM","RSG","RTX","RVTY","SBAC",
-            "SBUX","SCHW","SHW","SJM","SLB","SMCI","SNA","SNPS","SO","SPG","SPGI","SRE","STE",
-            "STLD","STT","STX","STZ","SWK","SWKS","SYF","SYK","SYY","T","TAP","TDG","TDY","TECH",
-            "TEL","TER","TFC","TFX","TGT","TJX","TMO","TMUS","TPR","TRGP","TRMB","TROW","TRV",
-            "TSCO","TSLA","TSN","TT","TTWO","TXN","TXT","TYL","UAL","UBER","UDR","UHS","ULTA",
-            "UNH","UNP","UPS","URI","USB","V","VICI","VLO","VLTO","VMC","VRSK","VRSN","VRTX",
-            "VST","VTR","VTRS","VZ","WAB","WAT","WBA","WBD","WDAY","WDC","WEC","WELL","WFC",
-            "WM","WMB","WMT","WRB","WRK","WST","WTW","WY","WYNN","XEL","XOM","XYL","YUM","ZBH",
-            "ZBRA","ZTS"
-          ]
+          # ── S&P 500 list with sector/industry from Wikipedia ──────
+          print("Getting S&P 500 list from Wikipedia...")
+          tables = pd.read_html(
+              "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+              header=0
+          )
+          sp_table = tables[0]
+          print(f"  Columns: {list(sp_table.columns)}")
 
-          sym_str = ",".join(SP500)
-          print(f"Using {len(SP500)} hardcoded S&P 500 symbols")
+          meta = {}
+          for _, row in sp_table.iterrows():
+              sym = str(row["Symbol"]).replace(".", "-").strip()
+              meta[sym] = {
+                  "name":     str(row["Security"]).strip(),
+                  "sector":   str(row["GICS Sector"]).strip(),
+                  "industry": str(row["GICS Sub-Industry"]).strip(),
+              }
+          symbols = list(meta.keys())
+          print(f"  {len(symbols)} symbols")
 
-          print("Fetching quotes...")
-          quotes = fmp_get(f"quote/{sym_str}?")
-          print(f"  {len(quotes)} quotes")
+          # ── Download 1 year price history ─────────────────────────
+          print("Downloading price history...")
+          df = yf.download(
+              symbols,
+              period="1y",
+              auto_adjust=True,
+              progress=False,
+              threads=True
+          )
+          close  = df["Close"]
+          volume = df["Volume"]
 
-          print("Fetching profiles...")
-          profiles = fmp_get(f"profile/{sym_str}?")
-          pmap = {p["symbol"]: p for p in profiles}
-          print(f"  {len(pmap)} profiles")
+          sma50   = close.rolling(50).mean().iloc[-1]
+          sma200  = close.rolling(200).mean().iloc[-1]
+          high52  = close.rolling(252).max().iloc[-1]
+          last_pr = close.iloc[-1]
+          prev_pr = close.iloc[-2]
+          avg_vol = volume.rolling(30).mean().iloc[-1]
+          print("  Price history done")
 
+          # ── Market cap via fast_info in batches ───────────────────
+          print("Fetching market caps...")
+          mcaps = {}
+          batch_size = 50
+          batches = [symbols[i:i+batch_size] for i in range(0, len(symbols), batch_size)]
+          for idx, batch in enumerate(batches):
+              print(f"  Batch {idx+1}/{len(batches)}...")
+              for sym in batch:
+                  try:
+                      fi = yf.Ticker(sym).fast_info
+                      mcaps[sym] = int(fi.market_cap or 0)
+                  except:
+                      mcaps[sym] = 0
+
+          # ── Build stocks list ─────────────────────────────────────
+          print("Building stocks list...")
           stocks = []
-          for q in quotes:
-              sym    = q.get("symbol","")
-              p      = pmap.get(sym, {})
-              pr     = float(q.get("price") or 0)
-              sma50  = float(q.get("priceAvg50")  or 0)
-              sma200 = float(q.get("priceAvg200") or 0)
-              ath    = float(q.get("yearHigh") or 0)
-              stocks.append({
-                  "s":    sym,
-                  "n":    (q.get("name") or "")[:40],
-                  "pr":   round(pr, 2),
-                  "ch":   round(float(q.get("changesPercentage") or 0), 2),
-                  "vo":   int(q.get("volume") or 0),
-                  "mc":   int(q.get("marketCap") or 0),
-                  "pe":   round(float(q.get("pe") or 0), 2),
-                  "se":   p.get("sector",""),
-                  "in":   p.get("industry",""),
-                  "s50":  round(sma50, 2),
-                  "s200": round(sma200, 2),
-                  "ath":  round(ath, 2),
-                  "ps50":  round((pr/sma50  - 1)*100, 2) if sma50  > 0 else 0,
-                  "ps200": round((pr/sma200 - 1)*100, 2) if sma200 > 0 else 0,
-                  "path":  round((pr/ath - 1)*100, 2) if ath > 0 else 0,
-              })
+          for sym in symbols:
+              try:
+                  pr   = float(last_pr.get(sym, 0) or 0)
+                  prev = float(prev_pr.get(sym, 0) or 0)
+                  if pr <= 0:
+                      continue
+                  ch   = round((pr/prev - 1)*100, 2) if prev > 0 else 0
+                  s50  = float(sma50.get(sym,  0) or 0)
+                  s200 = float(sma200.get(sym, 0) or 0)
+                  ath  = float(high52.get(sym,  0) or 0)
+                  vo   = int(avg_vol.get(sym,   0) or 0)
+                  mc   = mcaps.get(sym, 0)
+                  m    = meta.get(sym, {})
+                  stocks.append({
+                      "s":    sym,
+                      "n":    m.get("name", sym)[:40],
+                      "pr":   round(pr, 2),
+                      "ch":   ch,
+                      "vo":   vo,
+                      "mc":   mc,
+                      "pe":   0,
+                      "se":   m.get("sector", ""),
+                      "in":   m.get("industry", ""),
+                      "s50":  round(s50, 2),
+                      "s200": round(s200, 2),
+                      "ath":  round(ath, 2),
+                      "ps50":  round((pr/s50  - 1)*100, 2) if s50  > 0 else 0,
+                      "ps200": round((pr/s200 - 1)*100, 2) if s200 > 0 else 0,
+                      "path":  round((pr/ath  - 1)*100, 2) if ath  > 0 else 0,
+                  })
+              except Exception as e:
+                  print(f"  Skipping {sym}: {e}")
 
           stocks.sort(key=lambda x: x["mc"], reverse=True)
+          print(f"  {len(stocks)} stocks processed")
 
           with open("stocks.json", "w") as f:
               json.dump({"updated": datetime.date.today().isoformat(),
