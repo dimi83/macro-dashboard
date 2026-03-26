@@ -39,7 +39,7 @@ jobs:
 
           def fmp_get(path):
               url = f"{FMP_BASE}/{path}&apikey={FMP_KEY}"
-              print(f"  FMP: {path[:60]}...")
+              print(f"  FMP: {path[:70]}...")
               with urllib.request.urlopen(url, timeout=60) as r:
                   return json.loads(r.read())
 
@@ -51,30 +51,68 @@ jobs:
                          "vix": vix, "yc": yc}, f, separators=(",",":"))
           print("data.json written!")
 
-          # ── Stocks ───────────────────────────────────────────────
-          print("Fetching S&P 500 constituents...")
-          sp500   = fmp_get("sp500_constituent?")
-          symbols = [s["symbol"] for s in sp500]
-          sym_str = ",".join(symbols)
-          print(f"  {len(symbols)} symbols")
+          # ── S&P 500 symbols (hardcoded — no paid endpoint needed) ─
+          SP500 = [
+            "A","AAL","AAPL","ABBV","ABNB","ABT","ACGL","ACN","ADBE","ADI","ADM","ADP","ADSK",
+            "AEE","AEP","AES","AFL","AIG","AIZ","AJG","AKAM","ALB","ALGN","ALL","ALLE","AMAT",
+            "AMCR","AMD","AME","AMGN","AMP","AMT","AMZN","ANET","AON","AOS","APA","APD","APH",
+            "APTV","ARE","ATO","AVB","AVGO","AVY","AWK","AXON","AXP","AZO","BA","BAC","BALL",
+            "BAX","BBWI","BBY","BDX","BEN","BF.B","BG","BIIB","BIO","BK","BKNG","BKR","BLDR",
+            "BLK","BMY","BR","BRK.B","BRO","BSX","BWA","BX","BXP","C","CAG","CAH","CARR","CAT",
+            "CB","CBOE","CBRE","CCI","CCL","CDNS","CDW","CE","CEG","CF","CFG","CHD","CHRW","CHTR",
+            "CI","CINF","CL","CLX","CMA","CMCSA","CME","CMG","CMI","CMS","CNC","CNP","COF","COO",
+            "COP","COR","COST","CPAY","CPB","CPRT","CPT","CRL","CRM","CRWD","CSCO","CSGP","CSX",
+            "CTAS","CTLT","CTRA","CTSH","CTVA","CVS","CVX","CZR","D","DAL","DAY","DD","DE","DECK",
+            "DELL","DFS","DG","DGX","DHI","DHR","DIS","DLR","DLTR","DOC","DOV","DOW","DPZ","DRI",
+            "DTE","DUK","DVA","DVN","DXCM","EA","EBAY","ECL","ED","EFX","EG","EIX","EL","ELV",
+            "EMN","EMR","ENPH","EOG","EPAM","EQIX","EQR","EQT","ES","ESS","ETN","ETR","EVRG",
+            "EW","EXC","EXPD","EXPE","EXR","F","FANG","FAST","FCX","FDS","FDX","FE","FFIV","FI",
+            "FICO","FIS","FITB","FMC","FOX","FOXA","FRT","FSLR","FTNT","FTV","GD","GE","GEHC",
+            "GEN","GILD","GIS","GL","GLW","GM","GNRC","GOOGL","GPC","GPN","GRMN","GS","GWW","HAL",
+            "HAS","HBAN","HCA","HD","HES","HIG","HII","HLT","HOLX","HON","HPE","HPQ","HRL","HSIC",
+            "HST","HSY","HUBB","HUM","HWM","IBM","ICE","IDXX","IEX","IFF","ILMN","INCY","INTC",
+            "INTU","INVH","IP","IPG","IQV","IR","IRM","ISRG","IT","ITW","IVZ","J","JBHT","JBL",
+            "JCI","JKHY","JNJ","JNPR","JPM","K","KDP","KEY","KEYS","KHC","KIM","KLAC","KMB",
+            "KMI","KMX","KO","KR","KVUE","L","LDOS","LEN","LH","LHX","LIN","LKQ","LLY","LMT",
+            "LNT","LOW","LRCX","LULU","LUV","LVS","LW","LYB","LYV","MA","MAA","MAR","MAS","MCD",
+            "MCHP","MCK","MCO","MDLZ","MDT","MET","META","MGM","MHK","MKC","MKTX","MLM","MMC",
+            "MMM","MNST","MO","MOH","MOS","MPC","MPWR","MRK","MRNA","MRO","MS","MSCI","MSFT",
+            "MSI","MTB","MTCH","MTD","MU","NCLH","NDAQ","NEE","NEM","NFLX","NI","NKE","NOC",
+            "NOW","NRG","NSC","NTAP","NTRS","NUE","NVDA","NVR","NWS","NWSA","NXPI","O","ODFL",
+            "OKE","OMC","ON","ORCL","ORLY","OXY","PARA","PAYC","PAYX","PCAR","PCG","PEG","PEP",
+            "PFE","PFG","PG","PGR","PH","PHM","PKG","PLD","PM","PNC","PNR","PNW","PODD","POOL",
+            "PPG","PPL","PRU","PSA","PSX","PTC","PWR","PXD","PYPL","QCOM","QRVO","RCL","REG",
+            "REGN","RF","RJF","RL","RMD","ROK","ROL","ROP","ROST","RPM","RSG","RTX","RVTY","SBAC",
+            "SBUX","SCHW","SHW","SJM","SLB","SMCI","SNA","SNPS","SO","SPG","SPGI","SRE","STE",
+            "STLD","STT","STX","STZ","SWK","SWKS","SYF","SYK","SYY","T","TAP","TDG","TDY","TECH",
+            "TEL","TER","TFC","TFX","TGT","TJX","TMO","TMUS","TPR","TRGP","TRMB","TROW","TRV",
+            "TSCO","TSLA","TSN","TT","TTWO","TXN","TXT","TYL","UAL","UBER","UDR","UHS","ULTA",
+            "UNH","UNP","UPS","URI","USB","V","VICI","VLO","VLTO","VMC","VRSK","VRSN","VRTX",
+            "VST","VTR","VTRS","VZ","WAB","WAT","WBA","WBD","WDAY","WDC","WEC","WELL","WFC",
+            "WM","WMB","WMT","WRB","WRK","WST","WTW","WY","WYNN","XEL","XOM","XYL","YUM","ZBH",
+            "ZBRA","ZTS"
+          ]
+
+          sym_str = ",".join(SP500)
+          print(f"Using {len(SP500)} hardcoded S&P 500 symbols")
 
           print("Fetching quotes...")
-          quotes  = fmp_get(f"quote/{sym_str}?")
+          quotes = fmp_get(f"quote/{sym_str}?")
+          print(f"  {len(quotes)} quotes")
 
           print("Fetching profiles...")
           profiles = fmp_get(f"profile/{sym_str}?")
           pmap = {p["symbol"]: p for p in profiles}
+          print(f"  {len(pmap)} profiles")
 
-          # SMA data comes from the quote endpoint fields
-          # ATH we approximate from 52-week high (FMP quote has it)
           stocks = []
           for q in quotes:
-              sym  = q.get("symbol","")
-              p    = pmap.get(sym, {})
-              pr   = float(q.get("price") or 0)
+              sym    = q.get("symbol","")
+              p      = pmap.get(sym, {})
+              pr     = float(q.get("price") or 0)
               sma50  = float(q.get("priceAvg50")  or 0)
               sma200 = float(q.get("priceAvg200") or 0)
-              ath    = float(q.get("yearHigh") or 0)   # 52-week high as proxy
+              ath    = float(q.get("yearHigh") or 0)
               stocks.append({
                   "s":    sym,
                   "n":    (q.get("name") or "")[:40],
@@ -88,10 +126,8 @@ jobs:
                   "s50":  round(sma50, 2),
                   "s200": round(sma200, 2),
                   "ath":  round(ath, 2),
-                  # % from SMA50: (price/sma50 - 1) * 100
                   "ps50":  round((pr/sma50  - 1)*100, 2) if sma50  > 0 else 0,
                   "ps200": round((pr/sma200 - 1)*100, 2) if sma200 > 0 else 0,
-                  # % from 52w high
                   "path":  round((pr/ath - 1)*100, 2) if ath > 0 else 0,
               })
 
