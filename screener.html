@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Swiss Investor — S&P 500 Screener</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f3ee;--surf:#fff;--b1:rgba(0,0,0,.07);--b2:rgba(0,0,0,.14);
+  --t1:#16160e;--t2:#6a6a5c;--t3:#a0a090;
+  --red:#9e2b2b;--red-bg:#fbe9e9;
+  --green:#3a6b10;--green-bg:#e9f3dc;
+  --blue:#174f96;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#111110;--surf:#1a1a18;--b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.13);
+  --t1:#edecea;--t2:#96968a;--t3:#606058;
+  --red:#dc4848;--red-bg:rgba(220,72,72,.13);
+  --green:#62971f;--green-bg:rgba(98,151,31,.13);
+  --blue:#82b2e8;
+}}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;font-size:13px}
+header{background:var(--surf);border-bottom:.5px solid var(--b2);padding:0 1.5rem;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 2.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+nav{display:flex;gap:3px}
+nav a{font-size:12px;padding:5px 12px;border-radius:7px;text-decoration:none;color:var(--t2);transition:all .15s}
+nav a:hover{background:var(--b1);color:var(--t1)}
+nav a.active{background:var(--t1);color:var(--surf)}
+.hdate{font-size:11px;font-family:'DM Mono',monospace;color:var(--t3)}
+
+main{padding:1rem 1.5rem 3rem}
+.top-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.8rem}
+h1{font-size:18px;font-weight:400}
+.sub{font-size:11px;color:var(--t3)}
+
+/* Filters */
+.filters{background:var(--surf);border:.5px solid var(--b1);border-radius:10px;padding:.8rem 1rem;margin-bottom:.8rem;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)}
+.fg select,.fg input{background:var(--bg);border:.5px solid var(--b2);border-radius:6px;padding:5px 9px;font-size:12px;color:var(--t1);font-family:'DM Sans',sans-serif;min-width:120px;outline:none;cursor:pointer}
+.fg select:focus,.fg input:focus{border-color:var(--t1)}
+.btn{background:transparent;border:.5px solid var(--b2);border-radius:6px;padding:5px 12px;font-size:12px;color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.btn:hover{background:var(--b1);color:var(--t1)}
+
+/* Column manager */
+.col-manager{background:var(--surf);border:.5px solid var(--b1);border-radius:10px;padding:.7rem 1rem;margin-bottom:.8rem}
+.col-manager-title{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.5rem}
+.col-pills{display:flex;flex-wrap:wrap;gap:5px}
+.col-pill{display:flex;align-items:center;gap:5px;background:var(--bg);border:.5px solid var(--b1);border-radius:6px;padding:4px 8px;font-size:11px;cursor:grab;user-select:none;transition:all .15s}
+.col-pill:hover{border-color:var(--b2)}
+.col-pill.dragging{opacity:.4;cursor:grabbing}
+.col-pill.drag-over{border-color:var(--blue);background:var(--b1)}
+.col-pill.locked{cursor:default;opacity:.6}
+.col-pill input[type=checkbox]{cursor:pointer;accent-color:var(--blue);width:12px;height:12px}
+.col-pill .drag-handle{color:var(--t3);font-size:10px}
+
+/* Results */
+.results-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px}
+.results-info{font-size:11px;color:var(--t3)}
+
+/* Table */
+.table-wrap{overflow-x:auto;border-radius:10px;border:.5px solid var(--b1)}
+table{width:100%;border-collapse:collapse;background:var(--surf)}
+thead tr{border-bottom:.5px solid var(--b2)}
+th{padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);font-weight:500;white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:52px;background:var(--surf);z-index:10;border-right:.5px solid var(--b1)}
+th:last-child{border-right:none}
+th:hover{color:var(--t1)}
+th.sorted{color:var(--t1)}
+tbody tr{border-bottom:.5px solid var(--b1);transition:background .1s;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg)}
+td{padding:7px 10px;white-space:nowrap;border-right:.5px solid var(--b1)}
+td:last-child{border-right:none}
+.c-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--t3)}
+.c-sym{font-weight:500;font-family:'DM Mono',monospace;font-size:12px;color:var(--blue)}
+.c-name{color:var(--t1);max-width:200px;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.c-mono{font-family:'DM Mono',monospace;font-size:12px}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.sma-pos{color:var(--green);font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
+.sma-neg{color:var(--red);font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
+.pill{font-size:10px;padding:2px 7px;border-radius:99px;background:var(--bg);color:var(--t2);border:.5px solid var(--b1);white-space:nowrap;display:inline-block}
+
+/* Modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center;padding:1rem}
+.modal.open{display:flex}
+.mbox{background:var(--surf);border-radius:14px;padding:1.25rem;width:100%;max-width:840px;position:relative;max-height:90vh;overflow-y:auto}
+.mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.mtitle{font-size:15px;font-weight:500}
+.mclose{background:none;border:none;font-size:18px;cursor:pointer;color:var(--t2);padding:4px}
+.mchart{width:100%;border-radius:8px;display:block}
+.mmeta{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:7px;margin-top:.8rem}
+.mitem{background:var(--bg);border-radius:8px;padding:9px 11px}
+.mitem-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:3px}
+.mitem-val{font-size:14px;font-weight:500;font-family:'DM Mono',monospace}
+
+.loading{text-align:center;padding:3rem;color:var(--t3);font-size:12px}
+.err{color:var(--red);font-size:13px;padding:2rem;text-align:center}
+
+@media(max-width:600px){
+  header{padding:0 1rem}
+  main{padding:.8rem 1rem 3rem}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="dot"></div>Swiss Investor</div>
+  <nav>
+    <a href="index.html">Macro</a>
+    <a href="screener.html" class="active">Screener</a>
+  </nav>
+  <div class="hdate" id="hd"></div>
+</header>
+
+<main>
+  <div class="top-row">
+    <div>
+      <h1>S&amp;P 500 Screener</h1>
+      <div class="sub" id="sub">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="fg"><label>Sector</label>
+      <select id="f-sector"><option value="">All sectors</option></select>
+    </div>
+    <div class="fg"><label>Industry</label>
+      <select id="f-industry"><option value="">All industries</option></select>
+    </div>
+    <div class="fg"><label>Market cap</label>
+      <select id="f-mktcap">
+        <option value="">All</option>
+        <option value="mega">Mega (&gt;$200B)</option>
+        <option value="large">Large ($10B–$200B)</option>
+        <option value="mid">Mid ($2B–$10B)</option>
+        <option value="small">Small (&lt;$2B)</option>
+      </select>
+    </div>
+    <div class="fg"><label>Price change</label>
+      <select id="f-change">
+        <option value="">Any</option>
+        <option value="up5">Up &gt;5%</option>
+        <option value="up2">Up &gt;2%</option>
+        <option value="up">Up &gt;0%</option>
+        <option value="down">Down &lt;0%</option>
+        <option value="down2">Down &lt;−2%</option>
+        <option value="down5">Down &lt;−5%</option>
+      </select>
+    </div>
+    <div class="fg"><label>vs SMA50</label>
+      <select id="f-sma50">
+        <option value="">Any</option>
+        <option value="above">Above SMA50</option>
+        <option value="below">Below SMA50</option>
+        <option value="near">Within 2% of SMA50</option>
+      </select>
+    </div>
+    <div class="fg"><label>vs SMA200</label>
+      <select id="f-sma200">
+        <option value="">Any</option>
+        <option value="above">Above SMA200</option>
+        <option value="below">Below SMA200</option>
+      </select>
+    </div>
+    <div class="fg"><label>Search</label>
+      <input type="text" id="f-search" placeholder="Symbol or company…" style="min-width:160px"/>
+    </div>
+    <button class="btn" onclick="resetFilters()">Reset filters</button>
+  </div>
+
+  <!-- Column manager -->
+  <div class="col-manager">
+    <div class="col-manager-title">Columns — drag to reorder · toggle to show/hide</div>
+    <div class="col-pills" id="col-pills"></div>
+  </div>
+
+  <!-- Results bar -->
+  <div class="results-bar">
+    <div class="results-info" id="results-info"></div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead><tr id="thead-row"></tr></thead>
+      <tbody id="tbody"><tr><td colspan="20" class="loading">Loading stocks…</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="modal" id="modal" onclick="closeModal(event)">
+  <div class="mbox">
+    <div class="mhead">
+      <div class="mtitle" id="mtitle">—</div>
+      <button class="mclose" onclick="document.getElementById('modal').classList.remove('open')">✕</button>
+    </div>
+    <img id="mchart" class="mchart" src="" alt="chart" onerror="this.style.display='none'"/>
+    <div class="mmeta" id="mmeta"></div>
+  </div>
+</div>
+
+<script>
+document.getElementById('hd').textContent =
+  new Date().toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+
+// ── Column definitions ──────────────────────────────────────────────────────
+// locked: always shown, not toggleable; key: field in stock object
+const COL_DEFS = [
+  { id:'num',   label:'#',        key:'_idx',  locked:true,  render: (s,i)=>`<td class="c-num">${i+1}</td>` },
+  { id:'sym',   label:'Symbol',   key:'s',     locked:true,  render: s=>`<td class="c-sym">${s.s}</td>` },
+  { id:'name',  label:'Company',  key:'n',     locked:true,  render: s=>`<td class="c-name" title="${s.n}">${s.n}</td>` },
+  { id:'sec',   label:'Sector',   key:'se',    locked:false, render: s=>`<td><span class="pill">${s.se||'—'}</span></td>` },
+  { id:'ind',   label:'Industry', key:'in',    locked:false, render: s=>`<td><span class="pill" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle">${s.in||'—'}</span></td>` },
+  { id:'pr',    label:'Price',    key:'pr',    locked:false, render: s=>`<td class="c-mono">$${s.pr.toFixed(2)}</td>` },
+  { id:'ch',    label:'Change%',  key:'ch',    locked:false, render: s=>`<td class="c-mono ${s.ch>=0?'pos':'neg'}">${s.ch>=0?'+':''}${s.ch.toFixed(2)}%</td>` },
+  { id:'mc',    label:'Mkt Cap',  key:'mc',    locked:false, render: s=>`<td class="c-mono">${fmt(s.mc)}</td>` },
+  { id:'vo',    label:'Volume',   key:'vo',    locked:false, render: s=>`<td class="c-mono">${fmtVol(s.vo)}</td>` },
+  { id:'s50',   label:'SMA50',    key:'ps50',  locked:false, render: s=>`<td class="${s.ps50>=0?'sma-pos':'sma-neg'}">${s.ps50>=0?'+':''}${s.ps50.toFixed(2)}%</td>` },
+  { id:'s200',  label:'SMA200',   key:'ps200', locked:false, render: s=>`<td class="${s.ps200>=0?'sma-pos':'sma-neg'}">${s.ps200>=0?'+':''}${s.ps200.toFixed(2)}%</td>` },
+  { id:'ath',   label:'% ATH',    key:'path',  locked:false, render: s=>`<td class="c-mono ${s.path>=0?'pos':'neg'}">${s.path>=0?'+':''}${s.path.toFixed(2)}%</td>` },
+];
+
+// State
+let allStocks = [];
+let sortCol = 'mc';
+let sortAsc  = false;
+let colOrder = COL_DEFS.map(c => c.id);
+let colVisible = {};
+COL_DEFS.forEach(c => { colVisible[c.id] = true; });
+
+// Drag state
+let dragSrc = null;
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (!n) return '—';
+  if (n >= 1e12) return '$'+(n/1e12).toFixed(2)+'T';
+  if (n >= 1e9)  return '$'+(n/1e9).toFixed(2)+'B';
+  if (n >= 1e6)  return '$'+(n/1e6).toFixed(0)+'M';
+  return '$'+n.toLocaleString();
+}
+function fmtVol(n) {
+  if (!n) return '—';
+  if (n >= 1e9) return (n/1e9).toFixed(1)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0)+'K';
+  return n.toString();
+}
+
+// ── Column pill builder ──────────────────────────────────────────────────────
+function buildColPills() {
+  const container = document.getElementById('col-pills');
+  container.innerHTML = '';
+  colOrder.forEach(id => {
+    const col = COL_DEFS.find(c => c.id === id);
+    if (!col) return;
+    const pill = document.createElement('div');
+    pill.className = 'col-pill' + (col.locked ? ' locked' : '');
+    pill.dataset.id = id;
+    if (!col.locked) {
+      pill.draggable = true;
+      pill.addEventListener('dragstart', e => {
+        dragSrc = id;
+        pill.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      pill.addEventListener('dragend', () => {
+        pill.classList.remove('dragging');
+        document.querySelectorAll('.col-pill').forEach(p => p.classList.remove('drag-over'));
+      });
+      pill.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (dragSrc !== id) pill.classList.add('drag-over');
+      });
+      pill.addEventListener('dragleave', () => pill.classList.remove('drag-over'));
+      pill.addEventListener('drop', e => {
+        e.preventDefault();
+        pill.classList.remove('drag-over');
+        if (dragSrc && dragSrc !== id) {
+          const fromIdx = colOrder.indexOf(dragSrc);
+          const toIdx   = colOrder.indexOf(id);
+          colOrder.splice(fromIdx, 1);
+          colOrder.splice(toIdx, 0, dragSrc);
+          buildColPills();
+          renderTable();
+        }
+      });
+    }
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = colVisible[id];
+    cb.disabled = col.locked;
+    cb.addEventListener('change', () => {
+      colVisible[id] = cb.checked;
+      renderTable();
+    });
+
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.textContent = col.locked ? '🔒' : '⠿';
+
+    const lbl = document.createElement('span');
+    lbl.textContent = col.label;
+
+    pill.appendChild(cb);
+    if (!col.locked) pill.appendChild(handle);
+    pill.appendChild(lbl);
+    container.appendChild(pill);
+  });
+}
+
+// ── Filters ──────────────────────────────────────────────────────────────────
+function getFiltered() {
+  const sector  = document.getElementById('f-sector').value;
+  const industry= document.getElementById('f-industry').value;
+  const mktcap  = document.getElementById('f-mktcap').value;
+  const change  = document.getElementById('f-change').value;
+  const sma50f  = document.getElementById('f-sma50').value;
+  const sma200f = document.getElementById('f-sma200').value;
+  const search  = document.getElementById('f-search').value.toLowerCase().trim();
+
+  return allStocks.filter(s => {
+    if (sector   && s.se !== sector)    return false;
+    if (industry && s.in !== industry)  return false;
+    if (mktcap) {
+      const mc = s.mc;
+      if (mktcap==='mega'  && mc < 200e9)              return false;
+      if (mktcap==='large' && (mc<10e9||mc>=200e9))    return false;
+      if (mktcap==='mid'   && (mc<2e9||mc>=10e9))      return false;
+      if (mktcap==='small' && mc>=2e9)                 return false;
+    }
+    if (change) {
+      const c = s.ch;
+      if (change==='up5'   && c<=5)   return false;
+      if (change==='up2'   && c<=2)   return false;
+      if (change==='up'    && c<=0)   return false;
+      if (change==='down'  && c>=0)   return false;
+      if (change==='down2' && c>=-2)  return false;
+      if (change==='down5' && c>=-5)  return false;
+    }
+    if (sma50f) {
+      if (sma50f==='above' && s.ps50<=0)               return false;
+      if (sma50f==='below' && s.ps50>=0)               return false;
+      if (sma50f==='near'  && Math.abs(s.ps50)>2)      return false;
+    }
+    if (sma200f) {
+      if (sma200f==='above' && s.ps200<=0)             return false;
+      if (sma200f==='below' && s.ps200>=0)             return false;
+    }
+    if (search && !s.s.toLowerCase().includes(search) &&
+        !s.n.toLowerCase().includes(search))           return false;
+    return true;
+  });
+}
+
+// ── Sort ─────────────────────────────────────────────────────────────────────
+function sortBy(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = ['s','n','se','in'].includes(col); }
+  renderTable();
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function renderTable() {
+  const visibleCols = colOrder
+    .map(id => COL_DEFS.find(c => c.id === id))
+    .filter(c => c && colVisible[c.id]);
+
+  // Header
+  const thead = document.getElementById('thead-row');
+  thead.innerHTML = visibleCols.map(c => {
+    const isSorted = sortCol === c.key;
+    const arrow = isSorted ? (sortAsc ? ' ↑' : ' ↓') : ' ↕';
+    const locked = c.locked && c.id === 'num';
+    return `<th onclick="${locked?'':'sortBy(\''+c.key+'\')'}" class="${isSorted?'sorted':''}">${c.label}<span style="opacity:${isSorted?1:.3};font-size:9px">${arrow}</span></th>`;
+  }).join('');
+
+  // Body
+  const filtered = getFiltered();
+  filtered.sort((a, b) => {
+    let av = a[sortCol], bv = b[sortCol];
+    if (typeof av === 'string') return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    return sortAsc ? av - bv : bv - av;
+  });
+
+  document.getElementById('results-info').textContent =
+    `${filtered.length} of ${allStocks.length} stocks`;
+
+  const tbody = document.getElementById('tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="${visibleCols.length}" class="loading">No stocks match filters</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((s, i) => {
+    const cells = visibleCols.map(c => c.render(s, i)).join('');
+    return `<tr onclick="openModal('${s.s}')">${cells}</tr>`;
+  }).join('');
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+function openModal(sym) {
+  const s = allStocks.find(x => x.s === sym);
+  if (!s) return;
+  document.getElementById('mtitle').textContent = `${s.s} — ${s.n}`;
+  document.getElementById('mchart').src =
+    `https://finviz.com/chart.ashx?t=${sym}&ty=c&ta=1&p=d&s=l`;
+  document.getElementById('mchart').style.display = 'block';
+  document.getElementById('mmeta').innerHTML = [
+    ['Price',   `$${s.pr.toFixed(2)}`],
+    ['Change',  `<span class="${s.ch>=0?'pos':'neg'}">${s.ch>=0?'+':''}${s.ch.toFixed(2)}%</span>`],
+    ['Mkt Cap', fmt(s.mc)],
+    ['Volume',  fmtVol(s.vo)],
+    ['SMA50',   `<span class="${s.ps50>=0?'pos':'neg'}">${s.ps50>=0?'+':''}${s.ps50.toFixed(2)}%</span>`],
+    ['SMA200',  `<span class="${s.ps200>=0?'pos':'neg'}">${s.ps200>=0?'+':''}${s.ps200.toFixed(2)}%</span>`],
+    ['% ATH',   `<span class="${s.path>=0?'pos':'neg'}">${s.path>=0?'+':''}${s.path.toFixed(2)}%</span>`],
+    ['Sector',  s.se||'—'],
+    ['Industry',s.in||'—'],
+  ].map(([l,v])=>`<div class="mitem"><div class="mitem-label">${l}</div><div class="mitem-val" style="font-size:13px">${v}</div></div>`).join('');
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal'))
+    document.getElementById('modal').classList.remove('open');
+}
+
+// ── Reset filters ─────────────────────────────────────────────────────────────
+function resetFilters() {
+  ['f-sector','f-industry','f-mktcap','f-change','f-sma50','f-sma200']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-search').value = '';
+  renderTable();
+}
+
+// ── Wire up filter events ─────────────────────────────────────────────────────
+['f-sector','f-industry','f-mktcap','f-change','f-sma50','f-sma200']
+  .forEach(id => document.getElementById(id).addEventListener('change', () => {
+    // Industry filter: when sector changes, update industry options
+    if (id === 'f-sector') updateIndustryFilter();
+    renderTable();
+  }));
+document.getElementById('f-search').addEventListener('input', renderTable);
+
+function updateIndustryFilter() {
+  const sector = document.getElementById('f-sector').value;
+  const indSel = document.getElementById('f-industry');
+  const current = indSel.value;
+  const industries = [...new Set(
+    allStocks
+      .filter(s => !sector || s.se === sector)
+      .map(s => s.in)
+      .filter(Boolean)
+  )].sort();
+  indSel.innerHTML = '<option value="">All industries</option>';
+  industries.forEach(ind => {
+    const o = document.createElement('option');
+    o.value = ind; o.textContent = ind;
+    if (ind === current) o.selected = true;
+    indSel.appendChild(o);
+  });
+}
+
+// ── Load data ─────────────────────────────────────────────────────────────────
+fetch('stocks.json')
+  .then(r => { if(!r.ok) throw new Error(); return r.json(); })
+  .then(d => {
+    allStocks = d.stocks;
+    document.getElementById('sub').textContent =
+      `${allStocks.length} stocks · End of day · Updated ${d.updated} · Click any row for chart`;
+
+    // Populate sector filter
+    const sectors = [...new Set(allStocks.map(s=>s.se).filter(Boolean))].sort();
+    const sel = document.getElementById('f-sector');
+    sectors.forEach(sec => {
+      const o = document.createElement('option');
+      o.value = sec; o.textContent = sec;
+      sel.appendChild(o);
+    });
+    updateIndustryFilter();
+
+    buildColPills();
+    renderTable();
+  })
+  .catch(() => {
+    document.getElementById('tbody').innerHTML =
+      `<tr><td colspan="12" class="err">⚠ stocks.json not found — run the GitHub Action first</td></tr>`;
+    document.getElementById('sub').textContent = 'Data not loaded yet';
+    buildColPills();
+  });
+</script>
+</body>
+</html>
