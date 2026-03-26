@@ -34,53 +34,21 @@ jobs:
               print(f"  {len(result)} rows")
               return result
 
-          # --- Shiller CAPE ---
-          print("Fetching CAPE...")
-          with urllib.request.urlopen(
-              "https://posix4e.github.io/shiller_wrapper_data/data/latest.json",
-              timeout=30
-          ) as r:
-              shiller_raw = json.loads(r.read())
-
-          # print top-level keys so we can see the structure
-          print("Shiller keys:", list(shiller_raw.keys()))
-
-          # handle both {"data": [...]} and a bare list
-          if isinstance(shiller_raw, list):
-              rows = shiller_raw
-          elif "data" in shiller_raw:
-              rows = shiller_raw["data"]
-          else:
-              # take the first key that holds a list
-              rows = next(v for v in shiller_raw.values() if isinstance(v, list))
-
-          cape = []
-          for row in rows:
-              date_val = row.get("Date") or row.get("date") or ""
-              cape_val = row.get("CAPE") or row.get("cape") or row.get("Shiller P/E") or ""
-              try:
-                  cape.append([str(date_val)[:7], float(cape_val)])
-              except (ValueError, TypeError):
-                  pass
-
-          print(f"  {len(cape)} CAPE rows")
-
-          # --- FRED series ---
-          vix = fred("VIXCLS",          "2005-01-01")
-          yc  = fred("T10Y2Y",          "2000-01-01")
-          mkt = fred("DDDM01USA156NWDB","1995-01-01")
-          gdp = fred("GDP",             "1995-01-01")
+          cape    = fred("CAPE",             "1990-01-01")
+          vix     = fred("VIXCLS",           "2005-01-01")
+          yc      = fred("T10Y2Y",           "2000-01-01")
+          mkt     = fred("DDDM01USA156NWDB", "1995-01-01")
+          gdp     = fred("GDP",              "1995-01-01")
 
           gdp_map = {r[0][:4]: r[1] for r in gdp}
           buffett = [
               [r[0], round(r[1] / gdp_map[r[0][:4]] * 100, 1)]
               for r in mkt if r[0][:4] in gdp_map
           ]
-          print(f"  {len(buffett)} Buffett rows")
 
           out = {
               "updated": datetime.date.today().isoformat(),
-              "cape":    cape[-400:],
+              "cape":    cape,
               "vix":     vix,
               "yc":      yc,
               "buffett": buffett,
